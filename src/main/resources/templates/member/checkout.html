@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/member/dashboard">
+                <i class="fas fa-graduation-cap me-2"></i>Learning Platform
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/member/classes">Classes</a>
+                <a class="nav-link" href="/member/profile">Profile</a>
+                <a class="nav-link" href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shopping-cart me-2"></i>Checkout</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <img th:src="${class.imageUrl}" class="img-fluid rounded" style="max-height: 200px; object-fit: cover;">
+                            </div>
+                            <div class="col-md-6">
+                                <h4 th:text="${class.name}"></h4>
+                                <p th:text="${class.description}"></p>
+                                <p><strong>Instructor:</strong> <span th:text="${class.instructor}"></span></p>
+                                <p><strong>Duration:</strong> <span th:text="${class.duration}"></span></p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <form method="post" action="/member/checkout">
+                            <input type="hidden" name="classId" th:value="${class.id}">
+                            
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price</label>
+                                <!-- Vulnerable: Client can modify price -->
+                                <input type="number" class="form-control" id="price" name="price" th:value="${class.price}" step="0.01" readonly>
+                                <div class="form-text">Original price: Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span></div>
+                            </div>
+
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>Order Summary</h5>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Class Price:</span>
+                                        <span id="displayPrice">Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span></span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Total:</span>
+                                        <span id="displayTotal">Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="fas fa-credit-card"></i> Proceed to Payment
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="mt-3">
+                            <a th:href="@{/member/class/{id}(id=${class.id})}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Class
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Vulnerable: Client-side price manipulation
+        document.getElementById('price').addEventListener('input', function() {
+            const price = parseFloat(this.value) || 0;
+            const formatted = new Intl.NumberFormat('id-ID').format(price);
+            document.getElementById('displayPrice').textContent = 'Rp ' + formatted;
+            document.getElementById('displayTotal').textContent = 'Rp ' + formatted;
+        });
+    </script>
+</body>
+</html>

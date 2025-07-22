@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${class.name}">Class Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/member/dashboard">
+                <i class="fas fa-graduation-cap me-2"></i>Learning Platform
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/member/classes">Classes</a>
+                <a class="nav-link" href="/member/profile">Profile</a>
+                <a class="nav-link" href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <img th:src="${class.imageUrl}" class="card-img-top" style="height: 300px; object-fit: cover;">
+                    <div class="card-body">
+                        <h1 class="card-title" th:text="${class.name}"></h1>
+                        <p class="card-text" th:text="${class.description}"></p>
+                        
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <p><i class="fas fa-user text-primary"></i> <strong>Instructor:</strong> <span th:text="${class.instructor}"></span></p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p><i class="fas fa-clock text-primary"></i> <strong>Duration:</strong> <span th:text="${class.duration}"></span></p>
+                            </div>
+                        </div>
+                        
+                        <h4 class="text-success">
+                            <i class="fas fa-money-bill-wave"></i>
+                            Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span>
+                        </h4>
+                        
+                        <div th:if="${!hasPurchased}" class="mt-3">
+                            <a th:href="@{/member/checkout/{id}(id=${class.id})}" class="btn btn-success btn-lg">
+                                <i class="fas fa-shopping-cart"></i> Enroll Now
+                            </a>
+                        </div>
+                        <div th:if="${hasPurchased}" class="mt-3">
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check"></i> You have enrolled in this class
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Modules -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>Course Content</h3>
+                    </div>
+                    <div class="card-body">
+                        <div th:each="module : ${modules}" class="mb-3">
+                            <h5 th:text="${module.name}"></h5>
+                            <p class="text-muted" th:text="${module.description}"></p>
+                            
+                            <div th:each="material : ${module.materials}" class="ms-3 mb-2">
+                                <div th:if="${hasPurchased}">
+                                    <a th:href="@{/member/material/{classId}/{moduleId}/{materialId}(classId=${class.id}, moduleId=${module.id}, materialId=${material.id})}" 
+                                       class="text-decoration-none">
+                                        <i class="fas fa-play-circle text-primary"></i>
+                                        <span th:text="${material.name}"></span>
+                                    </a>
+                                </div>
+                                <div th:if="${!hasPurchased}">
+                                    <i class="fas fa-lock text-muted"></i>
+                                    <span class="text-muted" th:text="${material.name}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feedback Section -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>Student Feedback</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Submit Feedback Form (only if purchased) -->
+                        <div th:if="${hasPurchased}" class="mb-4">
+                            <h5>Leave Your Feedback</h5>
+                            <form method="post" action="/member/feedback">
+                                <input type="hidden" name="classId" th:value="${class.id}">
+                                <div class="mb-3">
+                                    <label for="rating" class="form-label">Rating</label>
+                                    <select class="form-select" id="rating" name="rating" required>
+                                        <option value="">Select Rating</option>
+                                        <option value="1">1 Star</option>
+                                        <option value="2">2 Stars</option>
+                                        <option value="3">3 Stars</option>
+                                        <option value="4">4 Stars</option>
+                                        <option value="5">5 Stars</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="comment" class="form-label">Comment</label>
+                                    <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                            </form>
+                            <hr>
+                        </div>
+
+                        <!-- Display Feedback -->
+                        <div th:each="feedback : ${feedbacks}" class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <h6 th:text="${feedback.user?.fullName}"></h6>
+                                <div>
+                                    <span th:each="i : ${#numbers.sequence(1, feedback.rating)}" class="text-warning">
+                                        <i class="fas fa-star"></i>
+                                    </span>
+                                    <span th:each="i : ${#numbers.sequence(feedback.rating + 1, 5)}" class="text-muted">
+                                        <i class="far fa-star"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Vulnerable to XSS -->
+                            <p th:utext="${feedback.comment}"></p>
+                            <small class="text-muted" th:text="${#temporals.format(feedback.createdAt, 'dd-MM-yyyy HH:mm')}"></small>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="/member/classes" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-arrow-left"></i> Back to Classes
+                        </a>
+                        <a href="/member/dashboard" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: learning_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: learning_app
+      MYSQL_USER: learning_user
+      MYSQL_PASSWORD: learning_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: learning_phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root123
+    ports:
+      - "9007:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: learning_app
+    ports:
+      - "8007:8007"
+      - "8087:8087"
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/learning_app
+      SPRING_DATASOURCE_USERNAME: learning_user
+      SPRING_DATASOURCE_PASSWORD: learning_pass
+
+volumes:
+  mysql_data:
