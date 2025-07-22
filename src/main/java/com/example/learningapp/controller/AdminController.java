@@ -27,29 +27,50 @@ public class AdminController {
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
         try {
-            // Check if user is logged in and is admin
             String role = (String) session.getAttribute("role");
             if (role == null || !role.equals("ADMIN")) {
                 return "redirect:/login";
             }
 
-            System.out.println("Admin dashboard access - Role: " + role);
+            List<LearningClass> classes = new ArrayList<>();
+            List<Purchase> purchases = new ArrayList<>();
+            
+            try {
+                List<LearningClass> classesFromDb = learningClassService.findAll();
+                if (classesFromDb != null) {
+                    classes = classesFromDb;
+                }
+            } catch (Exception e) {
+                System.out.println("Error loading classes: " + e.getMessage());
+            }
+            
+            try {
+                List<Purchase> purchasesFromDb = purchaseService.findAll();
+                if (purchasesFromDb != null) {
+                    purchases = purchasesFromDb;
+                }
+            } catch (Exception e) {
+                System.out.println("Error loading purchases: " + e.getMessage());
+            }
 
-            List<LearningClass> classes = learningClassService.findAll();
-            List<Purchase> purchases = purchaseService.findAll();
+            // Calculate counts
+            long pendingCount = purchases.stream()
+                .filter(p -> p.getStatus() == Purchase.Status.PENDING)
+                .count();
+            long confirmedCount = purchases.stream()
+                .filter(p -> p.getStatus() == Purchase.Status.CONFIRMED)
+                .count();
 
-            System.out.println("Classes found: " + (classes != null ? classes.size() : "null"));
-            System.out.println("Purchases found: " + (purchases != null ? purchases.size() : "null"));
-
-            model.addAttribute("classes", classes != null ? classes : new ArrayList<>());
-            model.addAttribute("purchases", purchases != null ? purchases : new ArrayList<>());
+            model.addAttribute("classes", classes);
+            model.addAttribute("purchases", purchases);
+            model.addAttribute("pendingCount", pendingCount);
+            model.addAttribute("confirmedCount", confirmedCount);
 
             return "admin/dashboard";
 
         } catch (Exception e) {
-            System.out.println("Admin dashboard error: " + e.getMessage());
             e.printStackTrace();
-            model.addAttribute("error", "Failed to load dashboard: " + e.getMessage());
+            model.addAttribute("error", "Dashboard error: " + e.getMessage());
             return "error";
         }
     }

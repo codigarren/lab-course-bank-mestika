@@ -36,7 +36,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h5>Total Classes</h5>
-                                <h3 th:text="${#lists.size(classes)}"></h3>
+                                <h3 th:text="${#lists.size(classes)}">0</h3>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-book fa-3x"></i>
@@ -51,7 +51,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h5>Total Purchases</h5>
-                                <h3 th:text="${#lists.size(purchases)}"></h3>
+                                <h3 th:text="${#lists.size(purchases)}">0</h3>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-shopping-cart fa-3x"></i>
@@ -66,7 +66,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h5>Pending</h5>
-                                <h3 th:text="${#lists.size(#lists.select(purchases, p -> p.status == T(com.example.learningapp.model.Purchase.Status).PENDING))}"></h3>
+                                <h3 th:text="${pendingCount}">0</h3>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-clock fa-3x"></i>
@@ -81,7 +81,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h5>Confirmed</h5>
-                                <h3 th:text="${#lists.size(#lists.select(purchases, p -> p.status == T(com.example.learningapp.model.Purchase.Status).CONFIRMED))}"></h3>
+                                <h3 th:text="${confirmedCount}">0</h3>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-check fa-3x"></i>
@@ -110,12 +110,11 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="purchase : ${#lists.sort(purchases, 'purchaseDate')}" th:if="${purchaseStat.index < 10}">
-                                        <td th:text="${purchase.user?.fullName}"></td>
-                                        <td th:text="${purchase.learningClass?.name}"></td>
+                                    <tr th:each="purchase : ${purchases}">
+                                        <td th:text="${purchase.user?.fullName}">Student Name</td>
+                                        <td th:text="${purchase.learningClass?.name}">Class Name</td>
                                         <td>
-                                            <span th:class="${purchase.status == T(com.example.learningapp.model.Purchase.Status).CONFIRMED ? 'badge bg-success' : purchase.status == T(com.example.learningapp.model.Purchase.Status).REJECTED ? 'badge bg-danger' : 'badge bg-warning'}" 
-                                                  th:text="${purchase.status}"></span>
+                                            <span class="badge bg-warning" th:text="${purchase.status}">Status</span>
                                         </td>
                                         <td>
                                             <a th:href="@{/admin/purchase/{id}(id=${purchase.id})}" class="btn btn-sm btn-outline-primary">View</a>
@@ -146,9 +145,9 @@
                                 </thead>
                                 <tbody>
                                     <tr th:each="class : ${classes}">
-                                        <td th:text="${class.name}"></td>
-                                        <td th:text="${class.instructor}"></td>
-                                        <td>Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
+                                        <td th:text="${class.name}">Class Name</td>
+                                        <td th:text="${class.instructor}">Instructor</td>
+                                        <td>Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}">0</span></td>
                                     </tr>
                                 </tbody>
                             </table>
