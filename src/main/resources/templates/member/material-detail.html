@@ -52,7 +52,8 @@
                         <!-- Text Content -->
                         <div th:if="${material.content}" class="mb-4">
                             <!-- Vulnerable to XSS -->
-                            <div th:utext="${material.content}"></div>
+                            <!-- <div th:utext="${material.content}"></div> -->
+                            <div th:text="${material.content}"></div>
                         </div>
 
                         <!-- File Download -->

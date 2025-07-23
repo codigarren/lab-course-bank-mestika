@@ -129,7 +129,8 @@
                                 </div>
                             </div>
                             <!-- Vulnerable to XSS -->
-                            <p th:utext="${feedback.comment}"></p>
+                            <!--<p th:utext="${feedback.comment}"></p>-->
+                            <p th:text="${feedback.comment}"></p>
                             <small class="text-muted" th:text="${#temporals.format(feedback.createdAt, 'dd-MM-yyyy HH:mm')}"></small>
                             <hr>
                         </div>

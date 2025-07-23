@@ -88,6 +88,7 @@
                     <div class="card-body">
                         <p><strong>File:</strong> <span th:text="${purchase.paymentProof}"></span></p>
                         <!-- Vulnerable: Direct file access without validation -->
+                        <!-- handle di backend -->
                         <a th:href="${purchase.paymentProof}" target="_blank" class="btn btn-outline-primary">
                             <i class="fas fa-download"></i> Download Payment Proof
                         </a>

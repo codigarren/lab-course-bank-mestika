@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.ArrayList;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
 @Controller
 @RequestMapping("/admin")
@@ -29,12 +31,16 @@ public class AdminController {
         try {
             String role = (String) session.getAttribute("role");
             if (role == null || !role.equals("ADMIN")) {
+                //Start
+                session.invalidate();
+                //End
                 return "redirect:/login";
             }
 
             List<LearningClass> classes = new ArrayList<>();
             List<Purchase> purchases = new ArrayList<>();
             
+
             try {
                 List<LearningClass> classesFromDb = learningClassService.findAll();
                 if (classesFromDb != null) {
@@ -79,6 +85,7 @@ public class AdminController {
     public String classes(HttpSession session, Model model) {
         String role = (String) session.getAttribute("role");
         if (role == null || !role.equals("ADMIN")) {
+            session.invalidate();
             return "redirect:/login";
         }
 
@@ -91,6 +98,7 @@ public class AdminController {
     public String purchases(HttpSession session, Model model) {
         String role = (String) session.getAttribute("role");
         if (role == null || !role.equals("ADMIN")) {
+            session.invalidate();
             return "redirect:/login";
         }
 
@@ -101,7 +109,15 @@ public class AdminController {
 
     @GetMapping("/purchase/{id}")
     public String purchaseDetail(@PathVariable Long id, Model model) {
-        Purchase purchase = purchaseService.findById(id);
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("ADMIN")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
+
+        Purchase purchase = purchaseService.findById(cleanedId);
         model.addAttribute("purchase", purchase);
         return "admin/purchase-detail";
     }
@@ -110,8 +126,15 @@ public class AdminController {
     public String updatePurchaseStatus(@RequestParam Long purchaseId,
             @RequestParam String status,
             Model model) {
-
-        Purchase.Status newStatus = Purchase.Status.valueOf(status);
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("ADMIN")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        String cleanedStatus = Jsoup.clean(status, Safelist.basic());
+        //End
+        Purchase.Status newStatus = Purchase.Status.valueOf(cleanedStatus);
         purchaseService.updateStatus(purchaseId, newStatus);
 
         return "redirect:/admin/purchases";

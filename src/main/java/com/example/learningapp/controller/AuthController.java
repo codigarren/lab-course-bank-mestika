@@ -7,6 +7,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
 @Controller
 public class AuthController {
@@ -24,16 +26,32 @@ public class AuthController {
         return "auth/login";
     }
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @PostMapping("/login")
     public String login(@RequestParam String username,
             @RequestParam String password,
             HttpSession session,
             Model model) {
+        
+        //Start
+        if (username == null || username.trim().isEmpty() || password == null || password.length() < 6) {
+            System.out.println("Login failed for username: " + username);
+            model.addAttribute("error", "Invalid username or password");
+            return "auth/login";
+        }
 
-        System.out.println("Login attempt - Username: " + username + ", Password: " + password);
+        String cleanedUsername = Jsoup.clean(username, Safelist.basic());
+        String hashedPass = passwordEncoder.encode(password);
+
+        System.out.println("Login attempt - Username: " + username + ", Password: " + hashedPass);
         
         // Vulnerable: No input validation/sanitization
-        User user = userService.authenticate(username, password);
+        //User user = userService.authenticate(username, password);
+        User user = userService.authenticate(cleanedUsername, hashedPass);
+
+        //End
         
         System.out.println("Authentication result: " + (user != null ? "SUCCESS" : "FAILED"));
 
@@ -70,25 +88,33 @@ public class AuthController {
             @RequestParam(defaultValue = "MEMBER") String role,
             Model model) {
 
-        if (userService.findByUsername(username) != null) {
+        //Start        
+        String cleanedUsername = Jsoup.clean(username, Safelist.basic());
+        String cleanedEmail = Jsoup.clean(email, Safelist.basic());
+        String hashedPass = passwordEncoder.encode(password);
+        String cleanedFullName = Jsoup.clean(fullName, Safelist.basic());
+        String cleanedPhone = Jsoup.clean(phone, Safelist.basic());
+
+        if (userService.findByUsername(cleanedUsername) != null) {
             model.addAttribute("error", "Username already exists");
             return "auth/register";
         }
 
-        if (userService.findByEmail(email) != null) {
+        if (userService.findByEmail(cleanedEmail) != null) {
             model.addAttribute("error", "Email already exists");
             return "auth/register";
         }
 
         User user = new User();
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setPassword(password); // Simpan sebagai plaintext
-        user.setFullName(fullName);
-        user.setPhone(phone);
+        user.setUsername(cleanedUsername);
+        user.setEmail(cleanedEmail);
+        user.setPassword(hashedPass); // Simpan sebagai plaintext
+        user.setFullName(cleanedFullName);
+        user.setPhone(cleanedPhone);
         user.setRole(User.Role.valueOf(role));
+        //End
 
-        System.out.println("Registering user: " + username + " with password: " + password);
+        System.out.println("Registering user: " + username + " with password: " + hashedPass);
         userService.save(user);
 
         model.addAttribute("success", "Registration successful! Please login.");

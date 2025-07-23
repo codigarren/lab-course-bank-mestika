@@ -9,8 +9,9 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends JpaRepository<User, Long> {
     
     // Vulnerable: Direct SQL injection possible
-    @Query(value = "SELECT * FROM users WHERE username = ?1 AND password = ?2", nativeQuery = true)
-    User findByUsernameAndPassword(String username, String password);
+    // @Query(value = "SELECT * FROM users WHERE username = ?1 AND password = ?2", nativeQuery = true)
+    // User findByUsernameAndPassword(String username, String password);
+    // findByUsernameAndPassword -> tidak dipakai?
     
     User findByUsername(String username);
     User findByEmail(String email);

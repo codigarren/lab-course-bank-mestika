@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
 @Controller
 @RequestMapping("/member")
@@ -42,6 +44,13 @@ public class MemberController {
     public String dashboard(HttpSession session, Model model) {
         // Vulnerable: No session validation
         Long userId = (Long) session.getAttribute("userId");
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
         List<LearningClass> classes = learningClassService.findAll();
         List<Purchase> purchases = purchaseService.findByUserId(userId);
 
@@ -53,6 +62,12 @@ public class MemberController {
     @GetMapping("/profile")
     public String profile(HttpSession session, Model model) {
         Long userId = (Long) session.getAttribute("userId");
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            return "redirect:/login";
+        }
+        //End
         User user = userService.findById(userId);
         model.addAttribute("user", user);
         return "member/profile";
@@ -66,12 +81,23 @@ public class MemberController {
             Model model) {
 
         Long userId = (Long) session.getAttribute("userId");
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
         User user = userService.findById(userId);
 
+        String cleanedFullName = Jsoup.clean(fullName, Safelist.basic());
+        String cleanedEmail = Jsoup.clean(email, Safelist.basic());
+        String cleanedPhone = Jsoup.clean(phone, Safelist.basic());
+
         // Vulnerable: No input validation
-        user.setFullName(fullName);
-        user.setEmail(email);
-        user.setPhone(phone);
+        user.setFullName(cleanedFullName);
+        user.setEmail(cleanedEmail);
+        user.setPhone(cleanedPhone);
 
         userService.save(user);
         model.addAttribute("success", "Profile updated successfully");
@@ -81,6 +107,13 @@ public class MemberController {
 
     @GetMapping("/classes")
     public String classes(Model model) {
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
         List<LearningClass> classes = learningClassService.findAll();
         model.addAttribute("classes", classes);
         return "member/classes";
@@ -89,9 +122,23 @@ public class MemberController {
     @GetMapping("/class/{id}")
     public String classDetail(@PathVariable Long id, HttpSession session, Model model) {
         Long userId = (Long) session.getAttribute("userId");
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
         LearningClass learningClass = learningClassService.findById(id);
         List<com.example.learningapp.model.Module> modules = moduleService.findByClassId(id);
         List<Feedback> feedbacks = feedbackService.findByClassId(id);
+        //Start
+        for (Feedback feedback : feedbacks) {
+            String originalComment = feedback.getComment();
+            String sanitizedComment = Jsoup.clean(originalComment, Safelist.basic());
+            feedback.setComment(sanitizedComment);
+        }
+        //End
         Purchase purchase = purchaseService.findConfirmedPurchase(userId, id);
 
         model.addAttribute("class", learningClass);
@@ -109,8 +156,28 @@ public class MemberController {
             HttpSession session,
             Model model) {
 
+        //Start
+        Long userId = (Long) session.getAttribute("userId");
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+
+        Purchase purchase = purchaseService.findConfirmedPurchase(userId, classId);
+        if (purchase == null) {
+            model.addAttribute("error", "You do not have access to this material.");
+            return "error/403";
+        }
+        //End
+
         // Should check if user has purchased the class, but doesn't
         Material material = materialService.findById(materialId);
+        //Start
+        String originalContent = feedback.getContent();
+        String cleanedContent = Jsoup.clean(originalContent, Safelist.basic()); // atau Safelist.none()
+        material.setContent(cleanedContent);
+        //End
         com.example.learningapp.model.Module module = moduleService.findById(moduleId);
         LearningClass learningClass = learningClassService.findById(classId);
 
@@ -122,6 +189,13 @@ public class MemberController {
 
     @GetMapping("/checkout/{classId}")
     public String checkout(@PathVariable Long classId, Model model) {
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
         LearningClass learningClass = learningClassService.findById(classId);
         model.addAttribute("class", learningClass);
         return "member/checkout";
@@ -132,6 +206,13 @@ public class MemberController {
             @RequestParam BigDecimal price,
             HttpSession session,
             Model model) {
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
 
         try {
             Long userId = (Long) session.getAttribute("userId");
@@ -143,10 +224,14 @@ public class MemberController {
             System.out.println("Processing checkout - UserId: " + userId + ", ClassId: " + classId + ", Price: " + price);
 
             // Vulnerable: Price manipulation - trusting client-side price
+            //Start
+            LearningClass learningClass = learningClassService.findById(classId);
+            //End
+
             Purchase purchase = new Purchase();
             purchase.setUserId(userId);
             purchase.setClassId(classId);
-            purchase.setPrice(price);
+            purchase.setPrice(learningClass.getPrice());
             purchase.setStatus(Purchase.Status.PENDING);
             
             purchase = purchaseService.save(purchase);
@@ -167,7 +252,13 @@ public class MemberController {
     public String uploadPayment(@RequestParam Long purchaseId,
             @RequestParam("file") MultipartFile file,
             Model model) {
-
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+        //End
         System.out.println("Upload payment - PurchaseId: " + purchaseId);
         System.out.println("File empty: " + file.isEmpty());
         System.out.println("File name: " + file.getOriginalFilename());
@@ -175,6 +266,38 @@ public class MemberController {
         try {
             // Vulnerable: No file validation
             if (!file.isEmpty()) {
+                //Start
+                String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+                String extension = FilenameUtils.getExtension(originalFileName).toLowerCase();
+                String mimeType = file.getContentType();
+                long fileSize = file.getSize();
+            
+                // Valid extensions
+                List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "pdf");
+                // Valid MIME types
+                List<String> allowedMimeTypes = Arrays.asList("image/jpeg", "image/png", "application/pdf");
+                // Max file size (in bytes)
+                long maxFileSize = 5 * 1024 * 1024;
+            
+                // Validate extension
+                if (!allowedExtensions.contains(extension)) {
+                    model.addAttribute("error", "File type not allowed");
+                    return "member/payment-upload";
+                }
+            
+                // Validate MIME type
+                if (!allowedMimeTypes.contains(mimeType)) {
+                    model.addAttribute("error", "Invalid MIME type");
+                    return "member/payment-upload";
+                }
+            
+                // Validate file size
+                if (fileSize > maxFileSize) {
+                    model.addAttribute("error", "File too large (max 2MB)");
+                    return "member/payment-upload";
+                }
+                //End
+
                 String uploadDir = "uploads/payments/";
                 File directory = new File(uploadDir);
                 if (!directory.exists()) {
@@ -213,10 +336,20 @@ public class MemberController {
             HttpSession session,
             Model model) {
 
+        //Start
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("MEMBER")) {
+            session.invalidate();
+            return "redirect:/login";
+        }
+
+        String cleanedComment = Jsoup.clean(comment, Safelist.basic());
+        //End
+
         Long userId = (Long) session.getAttribute("userId");
 
         // Vulnerable: No XSS protection
-        Feedback feedback = new Feedback(userId, classId, rating, comment);
+        Feedback feedback = new Feedback(userId, classId, rating, cleanedComment);
         feedbackService.save(feedback);
 
         return "redirect:/member/class/" + classId;

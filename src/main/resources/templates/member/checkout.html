@@ -49,6 +49,7 @@
                             <div class="mb-3">
                                 <label for="price" class="form-label">Price</label>
                                 <!-- Vulnerable: Client can modify price -->
+                                <!-- handle di backend -->
                                 <input type="number" class="form-control" id="price" name="price" th:value="${class.price}" step="0.01" readonly>
                                 <div class="form-text">Original price: Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span></div>
                             </div>
@@ -88,7 +89,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Vulnerable: Client-side price manipulation
+        // Vulnerable: Client-side price manipulation 
+        //handle di backend
         document.getElementById('price').addEventListener('input', function() {
             const price = parseFloat(this.value) || 0;
             const formatted = new Intl.NumberFormat('id-ID').format(price);
