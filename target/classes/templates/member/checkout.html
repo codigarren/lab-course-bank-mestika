@@ -49,7 +49,8 @@
                             <div class="mb-3">
                                 <label for="price" class="form-label">Price</label>
                                 <!-- Vulnerable: Client can modify price -->
-                                <input type="number" class="form-control" id="price" name="price" th:value="${class.price}" step="0.01" readonly>
+                                <!-- <input type="number" class="form-control" id="price" name="price" th:value="${class.price}" step="0.01" readonly> -->
+                                <div class="form-control-plaintext" id="price" th:text="${class.price}"></div>
                                 <div class="form-text">Original price: Rp <span th:text="${#numbers.formatDecimal(class.price, 0, 'COMMA', 0, 'POINT')}"></span></div>
                             </div>
 
